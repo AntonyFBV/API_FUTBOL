@@ -1,8 +1,11 @@
 import express from "express";
 import fetch from "node-fetch";
+import cors from "cors"; // <-- importar cors
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.use(cors()); // <-- permitir todos los orígenes
 
 const KEY = process.env.KEY;
 const SECRET = process.env.SECRET;
