@@ -1,12 +1,11 @@
-// server.js
 import express from "express";
 import fetch from "node-fetch";
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-const KEY = "4oODHCPHdZNjwjuh";
-const SECRET = "ONXCkkVDK8oNx7lBw9fdM5U04IkB1OTQ";
+const KEY = process.env.KEY;
+const SECRET = process.env.SECRET;
 const FRANCIA_ID = 1439;
 
 let cache = {
@@ -16,10 +15,7 @@ let cache = {
 
 async function fetchLiveMatches() {
   const now = Date.now();
-  // Refrescar cada 30 segundos
-  if (cache.data && now - cache.timestamp < 30000) {
-    return cache.data;
-  }
+  if (cache.data && now - cache.timestamp < 60 * 1000) return cache.data;
 
   try {
     const liveUrl = `https://livescore-api.com/api-client/matches/live.json?key=${KEY}&secret=${SECRET}`;
@@ -32,7 +28,6 @@ async function fetchLiveMatches() {
       m => m.home.id === FRANCIA_ID || m.away.id === FRANCIA_ID
     );
 
-    // Obtener eventos de cada partido
     const matchesWithEvents = await Promise.all(matches.map(async match => {
       const eventsUrl = `https://livescore-api.com/api-client/matches/events.json?match_id=${match.id}&key=${KEY}&secret=${SECRET}`;
       const eventsRes = await fetch(eventsUrl);
