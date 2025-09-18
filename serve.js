@@ -9,7 +9,7 @@ app.use(cors()); // <-- permitir todos los orígenes
 
 const KEY = process.env.KEY;
 const SECRET = process.env.SECRET;
-const FRANCIA_ID = 1441;
+const FRANCIA_ID = 2299;
 
 let cache = {
   timestamp: 0,
