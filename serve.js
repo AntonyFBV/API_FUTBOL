@@ -1,58 +1,95 @@
 import express from "express";
 import fetch from "node-fetch";
-import cors from "cors"; // <-- importar cors
+import cors from "cors";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors()); // <-- permitir todos los orígenes
+app.use(cors());
 
 const KEY = process.env.KEY;
 const SECRET = process.env.SECRET;
-const FRANCIA_ID = 2299;
+
+if (!KEY || !SECRET) {
+  console.error("Faltan KEY o SECRET en .env");
+  process.exit(1);
+}
+
+const CACHE_DURATION = 70 * 1000;
 
 let cache = {
   timestamp: 0,
   data: null
 };
 
-async function fetchLiveMatches() {
+async function fetchFromAPI(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Error HTTP");
+  return res.json();
+}
+
+async function getLiveMatches() {
   const now = Date.now();
-  if (cache.data && now - cache.timestamp < 60 * 1000) return cache.data;
+
+  if (cache.data && now - cache.timestamp < CACHE_DURATION) {
+    return cache.data;
+  }
 
   try {
-    const liveUrl = `https://livescore-api.com/api-client/matches/live.json?key=${KEY}&secret=${SECRET}`;
-    const res = await fetch(liveUrl);
-    const json = await res.json();
 
-    if (!json.success) return { success: false, message: "Error en la API" };
+    const competitions = [25,2]; // Chile y Prmier Codigo
+    const competitionParam = competitions.join(",");
 
-    const matches = json.data.match.filter(
-      m => m.home.id === FRANCIA_ID || m.away.id === FRANCIA_ID
-    );
+    const url = `https://livescore-api.com/api-client/matches/live.json?competition_id=${competitionParam}&key=${KEY}&secret=${SECRET}`;
 
-    const matchesWithEvents = await Promise.all(matches.map(async match => {
-      const eventsUrl = `https://livescore-api.com/api-client/matches/events.json?match_id=${match.id}&key=${KEY}&secret=${SECRET}`;
-      const eventsRes = await fetch(eventsUrl);
-      const eventsJson = await eventsRes.json();
-      return {
-        ...match,
-        events: eventsJson.success ? eventsJson.data.event : []
-      };
+    const json = await fetchFromAPI(url);
+
+    if (!json.success || !json.data?.match) {
+      return { success: true, matches: [] };
+    }
+
+    const matches = json.data.match.map(match => ({
+      id: match.id,
+      league: match.competition.name,
+      stadium: match.location,
+      status: match.status,
+      minute: match.time,
+      scheduled: match.scheduled,
+
+      home: {
+        name: match.home.name,
+        logo: match.home.logo
+      },
+
+      away: {
+        name: match.away.name,
+        logo: match.away.logo
+      },
+
+      score: match.scores.score
     }));
 
-    const result = { success: true, matches: matchesWithEvents };
+    const result = {
+      success: true,
+      count: matches.length,
+      matches
+    };
+
     cache = { timestamp: now, data: result };
+
     return result;
 
   } catch (err) {
     console.error(err);
-    return { success: false, message: "Error al conectar con la API externa" };
+    return { success: false, matches: [] };
   }
 }
 
-app.get("/api/matches", async (req, res) => {
-  const data = await fetchLiveMatches();
+app.get("/api/live", async (req, res) => {
+  const data = await getLiveMatches();
   res.json(data);
 });
 

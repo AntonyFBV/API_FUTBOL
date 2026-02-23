@@ -1,6 +1,7 @@
 {
   "name": "api_futbol",
   "version": "1.0.0",
+  "type": "module",
   "main": "serve.js",
   "scripts": {
     "start": "node serve.js"
@@ -11,6 +12,7 @@
   "description": "",
   "dependencies": {
     "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
     "express": "^5.1.0",
     "node-fetch": "^3.3.2"
   }
