@@ -40,7 +40,7 @@ async function getLiveMatches() {
 
   try {
 
-    const competitions = [25,2]; // Chile y Prmier Codigo
+    const competitions = [25,2,244]; // Chile y Prmier Codigo Champions
     const competitionParam = competitions.join(",");
 
     const url = `https://livescore-api.com/api-client/matches/live.json?competition_id=${competitionParam}&key=${KEY}&secret=${SECRET}`;
